@@ -27,7 +27,28 @@ def parse_function(text):
     """يحوّل النص لـ (sympy expression, numpy function)."""
     text = text.replace("^", "**")
     expr = sp.sympify(text, locals={"e": sp.E})
+    extra = expr.free_symbols - {X}
+    if extra:
+        raise ValueError("f(x) can only use the variable x, but it also contains: "
+                         + ", ".join(sorted(str(v) for v in extra)) + ".")
+    if expr.atoms(sp.core.function.AppliedUndef):
+        raise ValueError("f(x) uses a function name I don't know. "
+                         "Use sin, cos, tan, exp, log, sqrt, abs.")
     return expr, sp.lambdify(X, expr, "numpy")
+
+
+# Default stopping tolerances, used only when the user leaves es empty.
+# Without them the loop keeps running after the answer is already exact.
+TOL_F = 1e-12      # stop when |f(x)| is below this
+TOL_X = 1e-12      # stop when the iterate stops changing (relative)
+DIVERGE_LIMIT = 1e10   # stop a linear solver when the residual explodes past this
+
+
+def converged_by_default(x_old, x_new, f_new):
+    """True when |f(x)| ~ 0 or the iterate no longer changes (used when es is empty)."""
+    if not (math.isfinite(x_new) and math.isfinite(f_new)):
+        return False
+    return abs(f_new) < TOL_F or abs(x_new - x_old) <= TOL_X * max(1.0, abs(x_new))
 
 
 def ask_stopping_criterion():
@@ -69,7 +90,7 @@ def print_summary_root(result):
 
 
 # ======================================================================
-# 1) Bisection 
+# 1) Bisection (Mano)
 # ======================================================================
 class Bisection:
     name = "Bisection"
@@ -85,6 +106,9 @@ class Bisection:
     def solve(self, text, xl, xu, es=None, max_iter=100, xt=None):
         _, f = parse_function(text)
 
+        if not (math.isfinite(float(f(xl))) and math.isfinite(float(f(xu)))):
+            raise ValueError("f(x) can't be evaluated at xl or xu (check the domain, "
+                             "e.g. log or sqrt of a negative number).")
         if f(xl) * f(xu) > 0:
             raise ValueError("No sign change between xl and xu, choose another interval.")
 
@@ -94,6 +118,7 @@ class Bisection:
         root = xl
         best_x = best_f = None
         best_iter = 0
+        message = None
         i = 0
 
         for i in range(1, max_iter + 1):
@@ -110,8 +135,12 @@ class Bisection:
                 best_x, best_f, best_iter = xr, fabs, i
 
             if f(xr) == 0:
+                message = "Stopped: f(xr) = 0, exact root found."
                 break
             if es is not None and ea is not None and ea < es:
+                break
+            if es is None and (xu - xl) / 2 <= TOL_X * max(1.0, abs(xr)):
+                message = "Stopped: the interval is smaller than 1e-12, the root is found to machine precision."
                 break
 
             if f(xl) * f(xr) < 0:
@@ -122,7 +151,7 @@ class Bisection:
 
         return dict(text=text, rows=rows, points=points, root=root, f_root=float(f(root)),
                     best_x=best_x, best_iter=best_iter, f_best=float(f(best_x)),
-                    iterations=i, has_et=xt is not None, xl0=xl0, xu0=xu0)
+                    iterations=i, has_et=xt is not None, xl0=xl0, xu0=xu0, message=message)
 
     def display(self, r):
         print()
@@ -138,6 +167,8 @@ class Bisection:
             if r["has_et"]:
                 line += f" {row['et']:>12.6f}"
             print(line)
+        if r["message"]:
+            print(r["message"])
         print_summary_root(r)
 
     def plot(self, r):
@@ -165,7 +196,7 @@ class Bisection:
 
 
 # ======================================================================
-# 2) Newton-Raphson
+# 2) Newton-Raphson (Sara)
 # ======================================================================
 class NewtonRaphson:
     name = "Newton-Raphson"
@@ -209,6 +240,12 @@ class NewtonRaphson:
                 best_x, best_f, best_iter = x1, fabs, i
 
             if es is not None and ea < es:
+                break
+            if es is None and converged_by_default(x0, x1, float(f(x1))):
+                message = "Stopped: converged (|f(x)| < 1e-12 or x stopped changing)."
+                break
+            if not math.isfinite(x1):
+                message = "Stopped: the iteration blew up (x is not finite). Try another x(0)."
                 break
             x0 = x1
 
@@ -259,7 +296,7 @@ class NewtonRaphson:
 
 
 # ======================================================================
-# 3) Secant / Modified Secant
+# 3) Secant / Modified Secant (Essam)
 # ======================================================================
 class Secant:
     name = "Secant / Modified Secant"
@@ -327,6 +364,12 @@ class Secant:
 
             if es is not None and ea < es:
                 break
+            if es is None and converged_by_default(x, x_new, float(f(x_new))):
+                message = "Stopped: converged (|f(x)| < 1e-12 or x stopped changing)."
+                break
+            if not math.isfinite(x_new):
+                message = "Stopped: the iteration blew up (x is not finite). Try other starting values."
+                break
             x_old = x
             x = x_new
 
@@ -388,8 +431,15 @@ class Secant:
 
 
 # ======================================================================
-# 4) Jacobi / Gauss-Seidel
+# 4) Jacobi / Gauss-Seidel (Aya)
 # ======================================================================
+def is_diagonally_dominant(A):
+    """|a_ii| >= sum of |a_ij| (j != i) for every row: sufficient for convergence."""
+    A = np.abs(np.array(A, dtype=float))
+    off = A.sum(axis=1) - np.diag(A)
+    return bool(np.all(np.diag(A) >= off))
+
+
 class JacobiSeidel:
     name = "Jacobi / Gauss-Seidel"
 
@@ -434,6 +484,12 @@ class JacobiSeidel:
         if np.any(np.diag(A) == 0):
             raise ValueError("Diagonal elements cannot be zero.")
 
+        warning = None
+        if not is_diagonally_dominant(A):
+            warning = ("The matrix is not diagonally dominant, so Jacobi / Gauss-Seidel "
+                       "may not converge. Try reordering the equations.")
+        message = None
+
         rows, points = [], [x.copy()]
         best_x = best_res = None
         best_iter = 0
@@ -459,8 +515,15 @@ class JacobiSeidel:
 
             if es is not None and ea < es:
                 break
+            if es is None and ea < 1e-10 and res < 1e-10 * max(1.0, float(np.max(np.abs(b)))):
+                message = "Stopped: converged (x stopped changing and the residual is ~ 0)."
+                break
+            if not np.isfinite(res) or res > DIVERGE_LIMIT * max(1.0, float(np.max(np.abs(b)))):
+                message = ("Diverged: the values are growing without bound, so there is no solution "
+                           "to report. Check that the system is diagonally dominant.")
+                break
 
-        return dict(mode=mode, n=n, A=A, b=b, rows=rows, points=np.array(points),
+        return dict(mode=mode, warning=warning, message=message, diverged=message is not None and message.startswith("Diverged"), n=n, A=A, b=b, rows=rows, points=np.array(points),
                     x=x, best_x=best_x, best_iter=best_iter, iterations=i,
                     residual=A @ x - b, best_residual=A @ best_x - b,
                     has_et=xt is not None)
@@ -483,6 +546,10 @@ class JacobiSeidel:
             print(line)
 
         print()
+        if r["warning"]:
+            print("Warning:", r["warning"])
+        if r["message"]:
+            print(r["message"])
         print("Jacobi Method" if r["mode"] == "1" else "Gauss-Seidel Method")
         print("\nFinal Answers (last iteration):")
         for j in range(n):
@@ -515,7 +582,7 @@ class JacobiSeidel:
 
 
 # ======================================================================
-# 5) Linear Regression
+# 5) Linear Regression (Raheeq)
 # ======================================================================
 class LinearRegression:
     name = "Linear Regression"
