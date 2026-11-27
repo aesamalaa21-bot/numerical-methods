@@ -3,89 +3,138 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Numerical Methods Studio</title>
+<title>Numerica · Numerical Methods Workbench</title>
+<meta name="description" content="Bisection, Newton-Raphson, secant, Jacobi, Gauss-Seidel and linear regression. Python running in your browser.">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%231c1b19'/%3E%3Cpath d='M5 24 C12 24 14 8 27 8' fill='none' stroke='%23f4f1ea' stroke-width='2.4' stroke-linecap='round'/%3E%3Ccircle cx='18.5' cy='16' r='3.2' fill='%23d4572e'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
 <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
 <style>
-:root{--bg:#0b1020;--p:#7c5cff;--c:#22d3ee;--tx:#e8ecf8;--mu:#8a93b2;--bd:rgba(255,255,255,.09);--cd:rgba(255,255,255,.05)}
+:root{--paper:#f4f1ea;--card:#fffdf9;--ink:#1c1b19;--mu:#6b665b;--line:#d9d3c6;--soft:#ece7db;--ac:#b4431c;--ac-t:#f6e3da;
+--serif:"Fraunces",Georgia,serif;--sans:"IBM Plex Sans",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;--r:8px}
 *{box-sizing:border-box}[hidden]{display:none!important}
-body{margin:0;display:flex;min-height:100vh;font:15px/1.5 system-ui,"Segoe UI",sans-serif;color:var(--tx);
-background:radial-gradient(900px 500px at 85% -10%,#3b2a8f66,transparent),radial-gradient(700px 400px at 0 100%,#0e749055,transparent),var(--bg)}
-aside{width:250px;padding:28px 18px;border-right:1px solid var(--bd);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:20px}
-aside h1{margin:0;font-size:22px;line-height:1.2;background:linear-gradient(90deg,var(--c),var(--p));-webkit-background-clip:text;background-clip:text;color:transparent}
-aside small{margin-top:auto;color:var(--mu);font-size:12px}
-nav{display:flex;flex-direction:column;gap:6px}
-nav button{all:unset;cursor:pointer;padding:10px 14px;border-radius:12px;color:var(--mu);transition:.2s}
-nav button:hover{background:var(--cd);color:var(--tx)}
-nav button.on{background:linear-gradient(90deg,#7c5cff33,#22d3ee22);color:var(--tx);box-shadow:inset 0 0 0 1px #7c5cff66}
-main{flex:1;padding:32px;max-width:1100px;min-width:0}
-h2{margin:0;font-size:28px}header p{margin:4px 0 20px;color:var(--mu)}
-.card{background:var(--cd);border:1px solid var(--bd);border-radius:18px;padding:20px;margin-bottom:18px;backdrop-filter:blur(10px)}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
-.fld{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--mu)}
+html{scroll-behavior:smooth}
+body{margin:0;display:flex;min-height:100vh;font:15px/1.55 var(--sans);color:var(--ink);background:var(--paper)}
+aside{width:264px;flex:none;padding:30px 22px 22px;border-right:1px solid var(--line);position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:26px}
+.brand{display:flex;flex-direction:column;gap:4px}
+.brand h1{margin:0;font:600 26px/1 var(--serif);letter-spacing:-.02em}
+.brand h1 i{font-style:italic;font-weight:400;color:var(--ac)}
+.brand span{font-size:12px;color:var(--mu);letter-spacing:.02em}
+nav{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+nav button{all:unset;cursor:pointer;display:grid;grid-template-columns:26px 1fr;align-items:baseline;padding:11px 8px 11px 10px;border-bottom:1px solid var(--line);color:var(--mu);font-size:14px;border-left:2px solid transparent}
+nav button b{font:400 11px var(--mono);color:#a09a8c}
+nav button:hover{color:var(--ink);background:var(--soft)}
+nav button.on{color:var(--ink);font-weight:600;border-left-color:var(--ac);background:var(--card)}
+nav button.on b{color:var(--ac)}
+nav button:focus-visible,button:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+aside small{margin-top:auto;color:var(--mu);font-size:12px;line-height:1.5}
+.shell{flex:1;min-width:0;display:flex;flex-direction:column}
+main{flex:1;padding:36px 40px 20px;max-width:1120px;width:100%}
+header{margin-bottom:22px}
+header .by{font:500 11px var(--mono);text-transform:uppercase;letter-spacing:.12em;color:var(--ac)}
+h2{margin:6px 0 0;font:400 38px/1.1 var(--serif);letter-spacing:-.02em}
+header p{margin:8px 0 0;color:var(--mu);max-width:60ch}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:22px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.fld{display:flex;flex-direction:column;gap:6px;font-size:12.5px;font-weight:500;color:var(--mu)}
 .fld.w{grid-column:1/-1}
-input,select,textarea{background:#0a0f1f;border:1px solid var(--bd);color:var(--tx);border-radius:10px;padding:10px 12px;font:inherit;outline:0;width:100%}
-input:focus,select:focus,textarea:focus{border-color:var(--p);box-shadow:0 0 0 3px #7c5cff33}
-textarea{min-height:90px;font-family:ui-monospace,Consolas,monospace}
-.row{display:flex;gap:10px;margin-top:18px}
-button.go,button.gh{cursor:pointer;border:0;border-radius:12px;padding:11px 22px;font:inherit;font-weight:600;color:#fff;background:linear-gradient(90deg,var(--p),#4f8cff);transition:.2s}
-button.go:hover{transform:translateY(-1px);box-shadow:0 8px 24px #7c5cff55}
-button.gh{background:var(--cd);border:1px solid var(--bd);color:var(--mu)}
-#err{color:#ff7b8a;margin:12px 0 0;min-height:1em}
-.chips{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px}
-.chip{background:var(--cd);border:1px solid var(--bd);border-radius:14px;padding:14px}
-.chip span{display:block;font-size:12px;color:var(--mu)}.chip b{font-size:17px;word-break:break-all}
-.chip.hl{border-color:#22d3ee77;box-shadow:0 0 24px #22d3ee22}
-.tw{overflow-x:auto;padding:0}
-table{border-collapse:collapse;width:100%;font:13px ui-monospace,Consolas,monospace}
-th,td{padding:9px 14px;text-align:right;white-space:nowrap}
-th{color:var(--mu);font-weight:600;background:#ffffff08;position:sticky;top:0}
-tr:nth-child(even) td{background:#ffffff05}tr.best td{background:#22d3ee1c;color:#7ff0ff}
-.msg{color:#ffc46b;margin-bottom:12px}
-#ld{position:fixed;inset:0;z-index:9;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:var(--mu)}
-.sp{width:46px;height:46px;border-radius:50%;border:4px solid #ffffff1a;border-top-color:var(--c);animation:r 1s linear infinite}@keyframes r{to{transform:rotate(360deg)}}
-@media(max-width:800px){body{flex-direction:column}aside{width:auto;height:auto;position:static;border:0}nav{flex-direction:row;overflow-x:auto}nav button{white-space:nowrap}main{padding:18px}}
+input,select,textarea{background:#fff;border:1px solid var(--line);color:var(--ink);border-radius:6px;padding:9px 11px;font:400 14px var(--mono);outline:0;width:100%;transition:border-color .15s}
+input:hover,select:hover,textarea:hover{border-color:#b9b2a2}
+input:focus,select:focus,textarea:focus{border-color:var(--ac);box-shadow:0 0 0 1px var(--ac)}
+select{font-family:var(--sans)}
+textarea{min-height:92px;line-height:1.5}
+.row{display:flex;gap:10px;margin-top:20px;align-items:center;flex-wrap:wrap}
+.row kbd{margin-left:auto;font:400 11px var(--mono);color:var(--mu);border:1px solid var(--line);border-radius:4px;padding:1px 6px;background:var(--paper)}
+button.go,button.gh{cursor:pointer;border-radius:6px;padding:9px 20px;font:600 14px var(--sans);transition:background .15s,border-color .15s}
+button.go{border:1px solid var(--ac);background:var(--ac);color:#fff}
+button.go:hover{background:#9a3716;border-color:#9a3716}
+button.gh{background:transparent;border:1px solid var(--line);color:var(--ink)}
+button.gh:hover{background:var(--soft);border-color:#b9b2a2}
+.alert{margin:0 0 14px;padding:10px 14px;border:1px solid var(--line);border-left:3px solid var(--ink);border-radius:6px;background:var(--card);font-size:14px}
+.alert b{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.1em;margin-right:8px}
+.alert.warn,.alert.bad{border-left-color:var(--ac);background:var(--ac-t)}
+.alert.bad b,.alert.warn b{color:var(--ac)}
+#err:empty{display:none}#err{margin:16px 0 0}
+.res-head{display:flex;align-items:baseline;justify-content:space-between;margin:26px 0 10px}
+.res-head h3{margin:0;font:400 22px var(--serif)}
+.res-head div{display:flex;gap:8px}
+.res-head button{padding:5px 12px;font-size:13px}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));border:1px solid var(--line);border-radius:var(--r);background:var(--card);margin-bottom:16px;overflow:hidden}
+.fact{padding:14px 16px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);margin:0 -1px -1px 0}
+.fact span{display:block;font:500 12px var(--sans);color:var(--mu)}
+.fact b{display:block;margin-top:4px;font:500 17px var(--mono);font-variant-numeric:tabular-nums;word-break:break-all}
+.fact.hl{background:var(--ac-t)}.fact.hl b{color:var(--ac)}
+.tw{overflow:auto;padding:0;max-height:560px}
+table{border-collapse:collapse;width:100%;font:400 13px var(--mono);font-variant-numeric:tabular-nums}
+th,td{padding:8px 14px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--soft)}
+th{font:500 12px var(--sans);color:var(--mu);background:var(--card);position:sticky;top:0;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left;color:var(--mu)}
+tr:hover td{background:#faf7f0}
+tr.best td{background:var(--ac-t);color:var(--ac);font-weight:500}
+.chart{padding:10px 10px 4px}
+footer{padding:22px 40px 28px;border-top:1px solid var(--line);color:var(--mu);font-size:13px;display:flex;flex-wrap:wrap;gap:6px 28px;justify-content:space-between}
+footer strong{color:var(--ink);font-weight:600}
+footer .course{font-family:var(--serif);font-style:italic}
+#ld{position:fixed;inset:0;z-index:9;background:var(--paper);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--mu);text-align:center;padding:20px}
+.sp{width:30px;height:30px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--ac);animation:r .9s linear infinite}@keyframes r{to{transform:rotate(360deg)}}
+@media(max-width:800px){body{flex-direction:column}aside{width:auto;height:auto;position:static;border:0;padding:18px 18px 0;gap:14px}nav{flex-direction:row;overflow-x:auto;border-top:0}nav button{white-space:nowrap;border:0;border-bottom:2px solid transparent;border-left:0}nav button.on{border-bottom-color:var(--ac)}nav button b{display:none}nav button{display:block}aside small{display:none}main{padding:20px 18px}footer{padding:18px}h2{font-size:30px}}
+@media print{aside,#form-card,.res-head div,footer .hide-print,#ld{display:none!important}body{background:#fff;display:block}main{padding:0;max-width:none}.card,.facts{break-inside:avoid;border-color:#999}.tw{max-height:none;overflow:visible}footer{border:0;padding:12px 0}}
 </style>
 </head>
 <body>
-<div id="ld"><div class="sp"></div><p id="lt">Loading Python engine… (first load takes a few seconds)</p></div>
-<aside><h1>∑ Numerical<br>Methods Studio</h1><nav id="nav"></nav><small>Python runs inside your browser via Pyodide.</small></aside>
+<div id="ld"><div class="sp"></div><p id="lt">Loading the Python engine. The first visit takes a few seconds.</p></div>
+<aside>
+ <div class="brand"><h1>Numer<i>ica</i></h1><span>A numerical methods workbench</span></div>
+ <nav id="nav"></nav>
+ <small>The calculations are real Python (NumPy and SymPy) running inside your browser through Pyodide. Nothing is sent to a server.</small>
+</aside>
+<div class="shell">
 <main>
-<header><h2 id="t"></h2><p id="sub"></p></header>
-<section class="card"><div id="form" class="grid"></div>
-<div class="row"><button class="go" id="go">Solve ▸</button><button class="gh" id="rs">Reset</button></div><p id="err"></p></section>
+<header><div class="by" id="by"></div><h2 id="t"></h2><p id="sub"></p></header>
+<section class="card" id="form-card"><div id="form" class="grid"></div>
+<div class="row"><button class="go" id="go">Solve</button><button class="gh" id="rs">Reset</button><kbd>Enter ↵ to solve</kbd></div><div id="err"></div></section>
 <div id="out"></div>
 </main>
+<footer>
+ <div><strong>Numerica</strong> · built by Mano, Sara, Essam, Aya and Raheeq</div>
+ <div><span class="course">Numerical Methods</span> · Faculty of Artificial Intelligence</div>
+</footer>
+</div>
 
 <script>
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const F0="x^3 - x - 2";
+const INK="#1c1b19",AC="#b4431c",MUTE="#6b665b",SERIES=[AC,INK,"#8a8474","#d08a6e","#b5ae9d"];
 const MS={
- bisection:{n:"Bisection",d:"Bracketing method: halves the interval until the root is trapped.",c:"Bisection",s:1,f:[["f","f(x)","text",F0,0,1],["xl","xl","number",1],["xu","xu","number",2]]},
- newton:{n:"Newton-Raphson",d:"Fast open method that uses the symbolic derivative f′(x).",c:"Newton",s:1,f:[["f","f(x)","text",F0,0,1],["x0","x(0)","number",1.5]]},
- secant:{n:"Secant / Modified Secant",d:"Derivative-free: secant uses two points, modified uses a small perturbation δ.",c:"Secant",s:1,
+ bisection:{n:"Bisection",a:"Mano",d:"Bracketing method: halves the interval until the root is trapped.",c:"Bisection",s:1,f:[["f","f(x)","text",F0,0,1],["xl","xl","number",1],["xu","xu","number",2]]},
+ newton:{n:"Newton-Raphson",a:"Sara",d:"Fast open method that uses the symbolic derivative f′(x).",c:"Newton",s:1,f:[["f","f(x)","text",F0,0,1],["x0","x(0)","number",1.5]]},
+ secant:{n:"Secant / Modified Secant",a:"Essam",d:"Derivative-free: secant uses two points, modified secant uses a small perturbation δ.",c:"Secant",s:1,
   f:[["m","Method","select","1",0,0,["1|Secant","2|Modified Secant"]],["f","f(x)","text",F0,0,1],["xm","x(-1)","number",1,"1"],["x0","x(0)","number",2],["delta","δ","number",0.01,"2"]]},
- jacobi:{n:"Jacobi / Gauss-Seidel",d:"Iterative solvers for linear systems A·x = b.",c:"Jacobi",s:1,
-  f:[["m","Method","select","2",0,0,["1|Jacobi","2|Gauss-Seidel"]],["M","Augmented matrix [A | b] — one row per line","mat","10 2 1 13\n1 8 2 11\n2 1 9 12",0,1],["x0","Initial guesses","list","0 0 0"]]},
- regression:{n:"Linear Regression",d:"Least-squares line with St, Sr, r² and prediction.",c:"Regression",s:0,
+ jacobi:{n:"Jacobi / Gauss-Seidel",a:"Aya",d:"Iterative solvers for linear systems A·x = b.",c:"Jacobi",s:1,
+  f:[["m","Method","select","2",0,0,["1|Jacobi","2|Gauss-Seidel"]],["M","Augmented matrix [A | b], one row per line","mat","10 2 1 13\n1 8 2 11\n2 1 9 12",0,1],["x0","Initial guesses","list","0 0 0"]]},
+ regression:{n:"Linear Regression",a:"Raheeq",d:"Least-squares line with St, Sr, r² and prediction.",c:"Regression",s:0,
   f:[["x","X values","list","1 2 3 4 5",0,1],["y","Y values","list","2.1 3.9 6.2 7.8 10.1",0,1]]}
 };
-let cur,py;
+let cur,py,lastText="";
 const nums=s=>s.split(/[\s,;]+/).filter(Boolean).map(Number);
+const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 
 function build(k){
- cur=k;const c=MS[k];$("#t").textContent=c.n;$("#sub").textContent=c.d;$("#out").innerHTML="";$("#err").textContent="";
+ cur=k;const c=MS[k];$("#t").textContent=c.n;$("#sub").textContent=c.d;$("#by").textContent="Implemented by "+c.a;clearOut();$("#err").innerHTML="";
  $$("nav button").forEach(b=>b.classList.toggle("on",b.dataset.k==k));
  const fs=[...c.f];
- if(c.s)fs.push(["es","es (%) — optional","number","",0,0],["n","Max iterations — optional","number","",0,0],["xt",k=="jacobi"?"True values — optional":"True value — optional",k=="jacobi"?"list":"number","",0,0]);
+ if(c.s)fs.push(["es","es (%), optional","number","",0,0],["n","Max iterations, optional","number","",0,0],["xt",k=="jacobi"?"True values, optional":"True value, optional",k=="jacobi"?"list":"number","",0,0]);
  $("#form").innerHTML=fs.map(([id,l,t,v,o,w,opt])=>{
   const a=`id="${id}"`+(o?` data-o="${o}"`:"");
   const i=t=="select"?`<select ${a}>${opt.map(x=>{const[p,q]=x.split("|");return `<option value="${p}" ${p==v?"selected":""}>${q}</option>`}).join("")}</select>`
-   :t=="mat"?`<textarea ${a}>${v}</textarea>`:`<input ${a} type="${t=="number"?"number":"text"}" step="any" value="${v}">`;
+   :t=="mat"?`<textarea ${a} spellcheck="false">${v}</textarea>`:`<input ${a} type="${t=="number"?"number":"text"}" step="any" value="${v}" ${t=="text"?'spellcheck="false" autocomplete="off"':""}>`;
   return `<label class="fld ${w?"w":""}" ${o?`data-o="${o}"`:""}><span>${l}</span>${i}</label>`}).join("");
  const m=$("#m"),vis=()=>$$(".fld[data-o]").forEach(e=>e.hidden=!!m&&e.dataset.o!=m.value);
  if(m){m.onchange=vis;vis()}
 }
+function clearOut(){try{if($("#ch"))Plotly.purge("ch")}catch(e){}$("#out").innerHTML="";lastText=""}
 function collect(){
  const c=MS[cur],d={method:c.c},g=id=>$("#"+id).value.trim();
  const fs=[...c.f,["es",0,"number"],["n",0,"number"],["xt",0,cur=="jacobi"?"list":"number"]];
@@ -98,51 +147,72 @@ function collect(){
  return d;
 }
 const fmt=(k,v)=>v==null?"–":typeof v!="number"?v:k=="i"?v:(v!==0&&(Math.abs(v)>=1e7||Math.abs(v)<1e-8))?v.toExponential(4):v.toFixed(k=="ea"||k=="et"?6:8);
-const chip=(l,v,h)=>`<div class="chip ${h?"hl":""}"><span>${l}</span><b>${v}</b></div>`;
+const chip=(l,v,h)=>`<div class="fact ${h?"hl":""}"><span>${l}</span><b>${v}</b></div>`;
+const alertBox=(kind,label,t)=>`<p class="alert ${kind}"><b>${label}</b>${esc(t)}</p>`;
 function table(cols,rows,bi){
  cols=cols.filter(([k])=>rows.some(r=>r[k]!=null));
  return `<table><tr>${cols.map(c=>`<th>${c[1]}</th>`).join("")}</tr>${rows.map(r=>`<tr class="${bi&&r.i==bi?"best":""}">${cols.map(([k])=>`<td>${fmt(k,r[k])}</td>`).join("")}</tr>`).join("")}</table>`;
 }
-const lay=(t,x,y)=>({title:{text:t,font:{size:14}},paper_bgcolor:"rgba(0,0,0,0)",plot_bgcolor:"rgba(0,0,0,0)",font:{color:"#c9d1ee"},margin:{t:40,r:10,b:45,l:55},
- xaxis:{title:x,gridcolor:"#ffffff14",zerolinecolor:"#ffffff55"},yaxis:{title:y,gridcolor:"#ffffff14",zerolinecolor:"#ffffff55"},legend:{orientation:"h",y:-.25}});
+const lay=(t,x,y)=>({title:{text:t,font:{family:"Fraunces, serif",size:17,color:INK},x:.02},paper_bgcolor:"rgba(0,0,0,0)",plot_bgcolor:"rgba(0,0,0,0)",font:{family:"IBM Plex Sans, sans-serif",color:MUTE,size:12},margin:{t:46,r:16,b:50,l:58},
+ xaxis:{title:x,gridcolor:"#ece7db",zerolinecolor:"#9c9585",linecolor:"#d9d3c6"},yaxis:{title:y,gridcolor:"#ece7db",zerolinecolor:"#9c9585",linecolor:"#d9d3c6"},legend:{orientation:"h",y:-.22}});
 const plot=(tr,l)=>Plotly.newPlot("ch",tr,l,{responsive:true,displaylogo:false});
+
+function summary(r){ // plain-text result for the copy button
+ const t=[MS[cur].n];
+ if(r.kind=="root"){t.push("Best root = "+fmt("x",r.best)+" (iteration "+(r.bi??"-")+")","f(best) = "+fmt("x",r.fb),"Iterations = "+r.rows.length)}
+ else if(r.kind=="sys"){const L=r.rows.at(-1);if(!r.diverged)for(let k=1;k<=r.n;k++)t.push("x"+k+" = "+fmt("x",L["x"+k]));t.push("Iterations = "+r.rows.length);if(r.diverged)t.push("Diverged")}
+ else{const s=r.stats;t.push(`y = ${s.a0.toFixed(4)} + ${s.a1.toFixed(4)}x`,"r2 = "+s.r2.toFixed(4),"r = "+s.r.toFixed(4),"St = "+s.St.toFixed(4),"Sr = "+s.Sr.toFixed(4))}
+ if(r.warning)t.push("Warning: "+r.warning);if(r.msg)t.push(r.msg);
+ return t.join("\n");
+}
 
 function show(r){
  let h="";
  if(r.kind=="root"){
-  h=(r.msg?`<p class="msg">${r.msg}</p>`:"")+(r.note?`<p class="msg" style="color:var(--c)">${r.note}</p>`:"")+`<div class="chips">`+
+  h=(r.msg?alertBox(/^Stopped/.test(r.msg)?"":"warn",/^Stopped/.test(r.msg)?"Note":"Warning",r.msg):"")+(r.note?alertBox("","Derivative",r.note):"")+`<div class="facts">`+
    chip("Last estimate",fmt("x",r.last))+chip("f(last)",fmt("x",r.fl))+chip(`Best root (iter ${r.bi??"–"})`,fmt("x",r.best),1)+chip("f(best)",fmt("x",r.fb),1)+chip("Iterations",r.rows.length)+`</div>`;
  }else if(r.kind=="sys"){
   const L=r.rows.at(-1),B=r.rows.find(q=>q.i==r.bi)||L;
-  h=`<div class="chips">`+Array.from({length:r.n},(_,k)=>chip("x"+(k+1),fmt("x",L["x"+(k+1)]),1)).join("")+chip("Iterations",r.rows.length)+chip("Best iteration (min residual)",B.i)+chip("Residual",fmt("x",L.res))+`</div>`;
+  h=(r.warning?alertBox("warn","Warning",r.warning):"")+(r.msg?alertBox(r.diverged?"bad":"",r.diverged?"Stopped":"Note",r.msg):"");
+  h+=`<div class="facts">`+(r.diverged?"":Array.from({length:r.n},(_,k)=>chip("x"+(k+1),fmt("x",L["x"+(k+1)]),1)).join(""))+chip("Iterations",r.rows.length)+(r.diverged?"":chip("Best iteration (min residual)",B.i)+chip("Residual",fmt("x",L.res)))+`</div>`;
  }else{
   const s=r.stats;
-  h=`<div class="chips">`+chip("Equation",`y = ${s.a0.toFixed(4)} + ${s.a1.toFixed(4)}·x`,1)+chip("r²",s.r2.toFixed(4))+chip("r",s.r.toFixed(4))+chip("St",s.St.toFixed(4))+chip("Sr",s.Sr.toFixed(4))+chip("sy",s.sy.toFixed(4))+chip("sy/x",s.syx.toFixed(4))+`</div>`+
-   `<div class="card"><label class="fld">Predict y for a new x<input id="pp" type="number" step="any" placeholder="enter x"></label><b id="pr" style="font-size:18px"></b></div>`;
+  h=`<div class="facts">`+chip("Equation",`y = ${s.a0.toFixed(4)} + ${s.a1.toFixed(4)}·x`,1)+chip("r²",s.r2.toFixed(4))+chip("r",s.r.toFixed(4))+chip("St",s.St.toFixed(4))+chip("Sr",s.Sr.toFixed(4))+chip("sy",s.sy.toFixed(4))+chip("sy/x",s.syx.toFixed(4))+`</div>`+
+   `<div class="card"><label class="fld">Predict y for a new x<input id="pp" type="number" step="any" placeholder="enter x"></label><b id="pr" style="display:block;margin-top:10px;font:500 18px var(--mono)"></b></div>`;
  }
- $("#out").innerHTML=h+`<div class="card"><div id="ch"></div></div><div class="card tw">${table(r.cols,r.rows,r.kind=="root"?r.bi:r.kind=="sys"?r.bi:0)}</div>`;
+ lastText=summary(r);
+ $("#out").innerHTML=`<div class="res-head"><h3>Results</h3><div><button class="gh" id="cp">Copy result</button><button class="gh" id="pt">Print</button></div></div>`+h+`<div class="card chart"><div id="ch"></div></div><div class="card tw">${table(r.cols,r.rows,r.kind=="root"||r.kind=="sys"?r.bi:0)}</div>`;
+ $("#cp").onclick=async e=>{try{await navigator.clipboard.writeText(lastText);e.target.textContent="Copied"}catch(_){const t=document.createElement("textarea");t.value=lastText;document.body.appendChild(t);t.select();document.execCommand("copy");t.remove();e.target.textContent="Copied"}setTimeout(()=>e.target.textContent="Copy result",1600)};
+ $("#pt").onclick=()=>window.print();
  if(r.kind=="root"){
-  plot([{x:r.curve.map(p=>p[0]),y:r.curve.map(p=>p[1]),name:"f(x)",line:{color:"#7c5cff",width:3}},
-   {x:r.pts.map(p=>p[0]),y:r.pts.map(p=>p[1]),mode:"markers",name:"iterations",marker:{color:"#34d399",size:9}},
-   ...(r.best!=null?[{x:[r.best],y:[r.fb],mode:"markers",name:"best root",marker:{color:"#ff5c7a",size:13,symbol:"star"}}]:[])],lay(MS[cur].n,"x","f(x)"));
+  plot([{x:r.curve.map(p=>p[0]),y:r.curve.map(p=>p[1]),name:"f(x)",mode:"lines",line:{color:INK,width:2}},
+   {x:r.pts.map(p=>p[0]),y:r.pts.map(p=>p[1]),mode:"markers",name:"iterations",marker:{color:"#fffdf9",size:8,line:{color:MUTE,width:1.5}}},
+   ...(r.best!=null?[{x:[r.best],y:[r.fb],mode:"markers",name:"best root",marker:{color:AC,size:12,symbol:"diamond"}}]:[])],lay(MS[cur].n,"x","f(x)"));
  }else if(r.kind=="sys"){
-  plot(Array.from({length:r.n},(_,k)=>({x:Array.from({length:r.rows.length+1},(_,i)=>i),y:[r.init[k],...r.rows.map(q=>q["x"+(k+1)])],mode:"lines+markers",name:"x"+(k+1)})),lay((r.gs?"Gauss-Seidel":"Jacobi")+" convergence","Iterations","Value"));
+  plot(Array.from({length:r.n},(_,k)=>({x:Array.from({length:r.rows.length+1},(_,i)=>i),y:[r.init[k],...r.rows.map(q=>q["x"+(k+1)])],mode:"lines+markers",name:"x"+(k+1),line:{color:SERIES[k%5],width:2},marker:{size:5}})),lay((r.gs?"Gauss-Seidel":"Jacobi")+(r.diverged?" (diverging)":" convergence"),"Iterations","Value"));
  }else{
   const s=r.stats,lo=Math.min(...r.xs),hi=Math.max(...r.xs);
-  plot([{x:r.xs,y:r.ys,mode:"markers",name:"data",marker:{color:"#22d3ee",size:10}},{x:[lo,hi],y:[s.a0+s.a1*lo,s.a0+s.a1*hi],mode:"lines",name:"fit",line:{color:"#ff5c7a",width:3}}],lay("Linear regression","x","y"));
+  plot([{x:r.xs,y:r.ys,mode:"markers",name:"data",marker:{color:"#fffdf9",size:9,line:{color:INK,width:1.5}}},{x:[lo,hi],y:[s.a0+s.a1*lo,s.a0+s.a1*hi],mode:"lines",name:"fit",line:{color:AC,width:2}}],lay("Linear regression","x","y"));
   $("#pp").oninput=e=>$("#pr").textContent=e.target.value===""?"":"y = "+(s.a0+s.a1*e.target.value).toFixed(4);
  }
  $("#out").scrollIntoView({behavior:"smooth"});
 }
 
-$("#nav").innerHTML=Object.entries(MS).map(([k,c])=>`<button data-k="${k}">${c.n}</button>`).join("");
-$("#nav").onclick=e=>e.target.dataset.k&&build(e.target.dataset.k);
+function solve(){
+ clearOut();$("#err").innerHTML="";            // never leave old results under a new message
+ if(!py)return;
+ let r;
+ try{r=JSON.parse(py.globals.get("run")(JSON.stringify(collect())))}
+ catch(e){$("#err").innerHTML=alertBox("bad","Error","Something unexpected went wrong. Check your inputs and try again.");return}
+ if(r.kind=="error"){$("#err").innerHTML=alertBox("bad","Error",r.error);return}
+ try{show(r)}catch(e){clearOut();$("#err").innerHTML=alertBox("bad","Error","The result could not be displayed. Check your inputs and try again.")}
+}
+
+$("#nav").innerHTML=Object.entries(MS).map(([k,c],i)=>`<button data-k="${k}"><b>0${i+1}</b>${c.n}</button>`).join("");
+$("#nav").onclick=e=>{const b=e.target.closest("button");b&&build(b.dataset.k)};
 $("#rs").onclick=()=>build(cur);
-$("#go").onclick=()=>{
- $("#err").textContent="";
- try{show(JSON.parse(py.globals.get("run")(JSON.stringify(collect()))))}
- catch(e){$("#err").textContent="⚠ "+String(e.message).trim().split("\n").pop()}
-};
+$("#go").onclick=solve;
+document.addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey&&!e.target.closest("textarea,button")&&e.target.closest("#form-card"))solve()});
 build("bisection");
 (async()=>{
  try{py=await loadPyodide();await py.loadPackage(["numpy","sympy"]);py.FS.writeFile("Numerical_Methods.py",await (await fetch("Numerical_Methods.py")).text());py.runPython(await (await fetch("bridge.py")).text());$("#ld").remove()}
