@@ -101,6 +101,10 @@ nav button:active b{color:#ffd070;text-shadow:0 0 12px rgba(255,208,112,.95)}
 .fact.hl b{text-shadow:0 0 8px rgba(255,217,138,.5)}
 .fact.hl span{color:#e9d3a0}
 .fact.hl b{color:#ffe0a0}
+.facts.reg{display:flex;flex-wrap:wrap;gap:10px;border:0;background:none;overflow:visible;border-radius:0}
+.facts.reg .fact{flex:0 0 auto;width:auto;margin:0;border:1px solid var(--line);border-radius:var(--r);background:var(--card);padding:12px 18px}
+.facts.reg .fact b{white-space:nowrap;word-break:normal}
+.facts.reg .fact.hl{border-color:rgba(255,217,138,.35)}
 </style>
 </head>
 <body>
@@ -197,7 +201,7 @@ function show(r){
   h+=`<div class="facts">`+(r.diverged?"":Array.from({length:r.n},(_,k)=>chip("x"+(k+1),fmt("x",L["x"+(k+1)]),1)).join(""))+chip("Iterations",r.rows.length)+(r.diverged?"":chip("Best iteration (min residual)",B.i)+chip("Residual",fmt("x",L.res)))+`</div>`;
  }else{
   const s=r.stats;
-  h=`<div class="facts">`+chip("Equation",`y = ${s.a0.toFixed(4)} + ${s.a1.toFixed(4)}·x`,1)+chip("r²",s.r2.toFixed(4))+chip("r",s.r.toFixed(4))+chip("St",s.St.toFixed(4))+chip("Sr",s.Sr.toFixed(4))+chip("sy",s.sy.toFixed(4))+chip("sy/x",s.syx.toFixed(4))+`</div>`+
+  h=`<div class="facts reg">`+chip("Equation",`y = ${s.a0.toFixed(4)} + ${s.a1.toFixed(4)}·x`,1)+chip("r²",s.r2.toFixed(4))+chip("r",s.r.toFixed(4))+chip("St",s.St.toFixed(4))+chip("Sr",s.Sr.toFixed(4))+chip("sy",s.sy.toFixed(4))+chip("sy/x",s.syx.toFixed(4))+`</div>`+
    `<div class="card"><label class="fld">Predict y for a new x<input id="pp" type="number" step="any" placeholder="enter x"></label><b id="pr" style="display:block;margin-top:10px;font:500 18px var(--mono)"></b></div>`;
  }
  lastText=summary(r);
